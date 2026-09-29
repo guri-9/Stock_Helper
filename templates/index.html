@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelf Check</title>
+  <style>
+    :root { --ink:#1d2630; --muted:#66717d; --line:#d9dee3; --bg:#f6f7f8; --card:#fff;
+            --full:#2f7d4f; --low:#b7791f; --empty:#b83232; --accent:#1f5fbf; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           background:var(--bg); color:var(--ink); line-height:1.4; }
+    main { max-width:640px; margin:0 auto; padding:16px; }
+    h1 { font-size:1.4rem; margin:0 0 12px; }
+    h2 { font-size:1.05rem; margin:20px 0 8px; }
+    nav { display:flex; gap:8px; margin-bottom:12px; }
+    nav a { flex:1; text-align:center; padding:10px 6px; border:1px solid var(--line);
+            border-radius:8px; background:var(--card); color:var(--ink); text-decoration:none; font-size:.95rem; }
+    nav a.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+    form.add { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+    label { display:block; font-size:.85rem; color:var(--muted); margin:8px 0 3px; }
+    input, select, button { width:100%; padding:10px; font-size:1rem; border:1px solid var(--line);
+                            border-radius:8px; background:#fff; color:var(--ink); }
+    button { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; margin-top:12px; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline:3px solid #8fb5ee; outline-offset:2px; }
+    .item { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; }
+    .top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+    .name { font-weight:600; }
+    .meta { color:var(--muted); font-size:.85rem; }
+    .badge { font-weight:600; font-size:.9rem; }
+    .Full { color:var(--full); } .Low { color:var(--low); } .Empty { color:var(--empty); }
+    .row { display:flex; gap:8px; margin-top:10px; }
+    .row select, .row input { flex:1; }
+    .row button { flex:0 0 auto; width:auto; margin-top:0; padding:10px 16px; }
+    .del { background:#fff; color:var(--empty); border-color:var(--line); }
+    .empty-msg { color:var(--muted); padding:16px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Shelf Check</h1>
+
+  <nav>
+    <a href="{{ url_for('index') }}" class="{{ 'on' if view == 'all' }}">All items</a>
+    <a href="{{ url_for('index', view='restock') }}" class="{{ 'on' if view == 'restock' }}">Needs restock</a>
+    <a href="{{ url_for('index', view='overstock') }}" class="{{ 'on' if view == 'overstock' }}">Extra boxes</a>
+  </nav>
+
+  {% if items %}
+    {% for it in items %}
+    <div class="item">
+      <div class="top">
+        <span class="name">{{ it.name }}</span>
+        <span class="badge {{ it.status }}">{{ it.status }}</span>
+      </div>
+      <div class="meta">Aisle {{ it.aisle }} | {{ it.leftover_boxes }} leftover box(es){% if it.note %} | {{ it.note }}{% endif %}</div>
+      <form method="post" action="{{ url_for('update', item_id=it.id) }}" class="row">
+        <select name="status" aria-label="Shelf status">
+          {% for s in statuses %}<option {{ 'selected' if s == it.status }}>{{ s }}</option>{% endfor %}
+        </select>
+        <input type="number" name="leftover_boxes" min="0" value="{{ it.leftover_boxes }}" aria-label="Leftover boxes">
+        <button type="submit">Save</button>
+      </form>
+      <form method="post" action="{{ url_for('delete', item_id=it.id) }}">
+        <button type="submit" class="del">Remove item</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty-msg">
+      {% if view == 'restock' %}No shelves are marked low or empty.
+      {% elif view == 'overstock' %}No full shelves have leftover boxes.
+      {% else %}No items yet. Add your first one below.{% endif %}
+    </p>
+  {% endif %}
+
+  <h2>Add an item</h2>
+  <form method="post" action="{{ url_for('add') }}" class="add">
+    <label for="name">Item name</label>
+    <input id="name" name="name" required>
+    <label for="aisle">Aisle</label>
+    <input id="aisle" name="aisle" required>
+    <label for="status">Shelf status</label>
+    <select id="status" name="status">
+      {% for s in statuses %}<option>{{ s }}</option>{% endfor %}
+    </select>
+    <label for="leftover_boxes">Leftover boxes</label>
+    <input id="leftover_boxes" name="leftover_boxes" type="number" min="0" value="0">
+    <label for="note">Note (optional)</label>
+    <input id="note" name="note">
+    <button type="submit">Add item</button>
+  </form>
+</main>
+</body>
+</html>
